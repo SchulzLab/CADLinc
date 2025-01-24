@@ -1,4 +1,7 @@
 library(biomaRt)
+
+# Run Blast for the lncRNA sequences of mouse versus human.
+
 # choosing the dataset
 ensembl <- useEnsembl(biomart = "ensembl",
                       dataset = "hsapiens_gene_ensembl",
@@ -50,7 +53,6 @@ system("makeblastdb -in Homo_sapiens.GRCh38.single_line.lncrna.fa -out human_bla
 
 
 system("blastn -query Mus_musculus.GRCm39.single_line.lncrna.fa -db human_blastidx_lncRNA -num_threads 20 -outfmt \"6 qseqid sseqid pident qcovs qlen slen length bitscore evalue\" -max_target_seqs 1 -out mm_alignments_lncRNA.txt")
-
 
 system("blastn -query Homo_sapiens.GRCh38.single_line.lncrna.fa -db mouse_blastidx_lncRNA -num_threads 20 -outfmt \"6 qseqid sseqid pident qcovs qlen slen length bitscore evalue\" -max_target_seqs 1 -out hg_alignments_lncRNA.txt")
 

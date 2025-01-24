@@ -10,7 +10,7 @@ from matplotlib import cm
 from matplotlib.lines import Line2D
 from matplotlib import pyplot as plt
 import numpy as np
-import PlottingFunctions
+import DataIntegration.PlottingFunctions as PlottingFunctions
 
 """Collection of functions used for data processing."""
 
@@ -299,7 +299,6 @@ def gene_location_bpwise(bed_dict, gtf_file, plot_path, tss_type='5', external_b
     return regions_locs, total_locs
 
 
-
 def go_enrichment(go_genes, title_tag='', out_tag='', max_terms='all', organism='hsapiens', background=None,
                   numerate=False, godf_only=False, wanted_sources=['GO:MF', 'GO:BP', 'KEGG', 'REAC', 'HP', 'WP'],
                   keywords={}, cmap='plasma', fig_width=None, fig_height=None, legend_out=None, rotation=45, font_s=16,
@@ -488,7 +487,7 @@ def match_genenames(gene_symbols, gtf_file, species='human', scopes="symbol, ali
     :return: mapped_names: Dict of {gene name: Ensembl ID} of the mappable names.
     :return: no_hits: Names which were not mappable via gtf-file nor mygene.info.
     """
-    available_species = ['human', 'mouse', 'rat', 'fruitfly', 'nematode', 'zebrafish', 'thale-cress', 'frog' and 'pig']
+    available_species = ['human', 'mouse', 'rat', 'fruitfly', 'nematode', 'zebrafish', 'thale-cress', 'frog', 'pig']
     if species not in available_species:
         print("ERROR: species not available with name for mygene.info", species)
         print("Available are", available_species)

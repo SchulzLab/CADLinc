@@ -24,7 +24,7 @@ if not os.path.isdir(inter_folder):
     os.mkdir(inter_folder)
 
 # Input for the abc scoring and the lifting afterwards.
-executable = "STARE/Dev_Code/STARE_ABCpp"
+executable = "STARE_ABCpp"
 gene_annotation = "gencode.v38.annotation.gtf"
 blocklisted_regions = "hg38-blacklist.v2.bed"
 contact_folder = "ENCFF134PUN_avgHiC_hg38/"

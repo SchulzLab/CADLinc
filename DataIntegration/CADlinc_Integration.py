@@ -283,7 +283,7 @@ nonnovel_biotypes = Counter(gene_table[~gene_table['Ensembl ID'].isin(unique_nov
 gtf_biotype_df = pd.DataFrame.from_dict({"candidate\nCAD genes": candidates_biotypes, 'candidate CAD genes\nwith evidence': nonnovel_biotypes, 'novel candidate\nCAD genes': novel_biotypes}).T
 gtf_biotype_df.columns = [c.replace('_', ' ') for c in gtf_biotype_df.columns]
 PlottingFunctions.stacked_bars(plot_df=gtf_biotype_df, x_col='Gene set', y_cols=gtf_biotype_df.columns, y_label='genes',
-                          palette=ColoursAndShapes.glasbey_cool, title="", output_path=plot_out+"CandidatesGTFBiotypes",
+                          palette='glasbey_cool', title="", output_path=plot_out+"CandidatesGTFBiotypes",
                           x_size=9, y_size=6, legend_out=1.35, rotation=0, legend=True, fraction=True, numerate=True,
                           vertical=False)
 
@@ -316,7 +316,7 @@ for filter_tag, filter_set in [['All', genes_passed_filters], ['protein coding',
 # First enrichment of all the filtered genes.
 keep_sources = ['GO:MF', 'GO:BP', 'KEGG', 'REAC', 'HP', 'WP']
 final_genes_go = HelperFunctions.go_enrichment({"identified CAD genes": final_gene_set}, title_tag="Candidate CAD genes", out_tag=plot_out + "JointDG",
-                           max_terms='all', font_s=16, numerate=True, organism='hsapiens', cmap='plasma', background={"identified CAD genes": all_open - excluded_genes})
+                                               max_terms='all', font_s=16, numerate=True, organism='hsapiens', cmap='plasma', background={"identified CAD genes": all_open - excluded_genes})
 final_genes_go['identified CAD genes'].to_csv(godf_out + "CandidateCADGenes_gProfiler.tsv", sep='\t', header=True, index=False)
 
 # Manually selected among the top 20.
@@ -326,8 +326,8 @@ wp_terms = ['Cholesterol metabolism', 'Canonical and non canonical TGF B signali
             'Familial hyperlipidemia type 4', 'TGF beta signaling pathway', 'VEGFA VEGFR2 signaling',
             'Interleukin 11 signaling pathway', 'Triacylglyceride synthesis', 'miRNA targets in ECM and membrane receptors']
 intermed_go = HelperFunctions.go_enrichment({"identified CAD genes": final_gene_set}, title_tag="identified CAD genes", out_tag=plot_out + "JointDGFilterWP",
-                               max_terms=20, font_s=16, numerate=True, organism='hsapiens', cmap='plasma', wanted_sources=['WP'], rotation=0,
-                               background={"identified CAD genes": all_open - excluded_genes}, keywords={"WP": wp_terms})
+                                            max_terms=20, font_s=16, numerate=True, organism='hsapiens', cmap='plasma', wanted_sources=['WP'], rotation=0,
+                                            background={"identified CAD genes": all_open - excluded_genes}, keywords={"WP": wp_terms})
 
 # And even another version where we remove redundant terms, altering the df from the previous function call.
 wp_df = intermed_go['identified CAD genes']
@@ -341,8 +341,8 @@ avg_fam_hyperlip['name'] = 'Familial hyperlipidemia'
 wp_df = wp_df[~wp_df['name'].str.contains('Familial hyperlipidemia')]
 wp_df = pd.concat([wp_df, pd.DataFrame(avg_fam_hyperlip).T], axis=0)
 _ = HelperFunctions.go_enrichment({"identified CAD genes": final_gene_set}, title_tag="identified CAD genes", out_tag=plot_out + "JointDGCustomWP",
-                               max_terms=20, fig_width=2.5, fig_height=3, font_s=16, numerate=True, organism='hsapiens', cmap='plasma', wanted_sources=['WP'], rotation=0,
-                               background={}, custom_dfs={"identified CAD genes": {"WP": wp_df}})
+                                  max_terms=20, fig_width=2.5, fig_height=3, font_s=16, numerate=True, organism='hsapiens', cmap='plasma', wanted_sources=['WP'], rotation=0,
+                                  background={}, custom_dfs={"identified CAD genes": {"WP": wp_df}})
 
 # ----------------------------------------------------------------------------------------------------------------
 # Per lineage number of affected genes.

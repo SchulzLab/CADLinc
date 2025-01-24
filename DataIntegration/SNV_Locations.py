@@ -3,7 +3,7 @@ import PyComplexHeatmap as pch
 from PyComplexHeatmap import *
 import matplotlib.pylab as plt
 import HelperFunctions
-import PlottingFunctions
+import DataIntegration.PlottingFunctions as PlottingFunctions
 
 """Plot pie charts of the location of SNPs in relation to genes, and also the number of SNPs in
 enhancers of each cell.
@@ -64,13 +64,10 @@ for cell in cell_types:
         enh_w_snp = len(these_enhancer.intersect(snp_b, u=True))
         enhancer_snps.append([cell, snp_t, len(snp_b.intersect(these_enhancer, u=True)), enh_w_snp, enh_w_snp / len(these_enhancer)])
 
-enhancer_snp_df = pd.DataFrame.from_records(enhancer_snps, columns=['Cell type', 'SNV type', 'SNVs in enhancers',
-                                                                    'Enhancers with SNVs', 'Fraction of enhancer with SNVs'])
-
 reorder_dict = {c: {} for c in cell_types}
 for entry in enhancer_snps:
     reorder_dict[entry[0]][entry[1]] = entry[4]
-    reorder_dict[entry[0]][entry[1] + ' in CREs'] = entry[2]  # NOTE here the TF-SNVs in REMs is getting overwritten.
+    reorder_dict[entry[0]][entry[1] + ' in CREs'] = entry[2]  # NOTE here the TF-SNVs in CREs is getting overwritten.
 
 cell_enhancer_snp_df = pd.DataFrame.from_dict(reorder_dict, orient='index')
 cell_enhancer_snp_df['Cell type'] = [cell_name_map[i] for i in cell_enhancer_snp_df.index]
@@ -95,7 +92,7 @@ all_groups = list(dict.fromkeys(joint_cell_df['Class']).keys())
 
 # This part is admittedly very ugly, as I never managed to convince PyComplexHeatmap to really plot what I wanted, and
 # instead had to plot parts of it which I later puzzled together.
-colour_dict = {c: HelperFunctions.glasbey_cool[i] for i, c in enumerate(all_groups)}
+colour_dict = {c: PlottingFunctions.glasbey_palettes['glasbey_cool'][i] for i, c in enumerate(all_groups)}
 left_ha = pch.HeatmapAnnotation(label=pch.anno_label(joint_cell_df['Class'], merge=True, legend=False, extend=False, colors='black', relpos=(1, 0.5)),
                                 Group=pch.anno_simple(joint_cell_df['Class'], legend=False, colors=colour_dict),
                                 verbose=1, axis=0, plot_legend=False, label_kws=dict(visible=False))
