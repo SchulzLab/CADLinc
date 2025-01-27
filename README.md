@@ -9,6 +9,8 @@ new data, but as documentation of the manuscript analyses.
 - [SNEEPAnalyses](https://github.com/SchulzLab/CADLinc/tree/main/SNEEPAnalyses/): Gathering of SNV information, background sampling and running the SNEEP pipeline. Follow the commands in workflow_3.0.sh.
 - [TFAnalyses](https://github.com/SchulzLab/CADLinc/tree/main/TFAnalyses/): Analyses and plotting on TF-level (Figure 3). The commands are written in TF_Figures_command.sh.
 - [GATES](https://github.com/SchulzLab/CADLinc/tree/main/GATES/): How the GATES test was run, follow the commands in commands.sh.
+- [PheWAS_Coloc](https://github.com/SchulzLab/CADLinc/tree/main/PheWAS_Coloc/): GTEx and STARNET data processing and PheWAS, including figure generation (Figure 4).
+- [GenomicTrackView](https://github.com/SchulzLab/CADLinc/tree/main/GenomicTrackView/): Scripts for generating the genomic track plots for CDKN2B-AS1 (Supp. Figure 2).
 
 Other relevant software related to the manuscript's analyses:
 - [STARE](https://github.com/schulzlab/stare): Predict enhancer-gene interactions
