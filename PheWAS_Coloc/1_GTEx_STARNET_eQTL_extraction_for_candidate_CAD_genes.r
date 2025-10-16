@@ -157,7 +157,6 @@ snps_hg19$chr_pos_hg38 <- gsub(":.*?-(\\d+)", ":\\1", snps_hg19$V4)
 snps_hg19$chr_pos_hg38 <- sub('^chr', '', snps_hg19$chr_pos_hg38)
 head(snps_hg19)
 
-
 # Add the column with hg19 from snps_hg19 to the GTEx_eQTL
 merged_hg19_GTEx_eQTL <- merge(snps_hg19, GTEx_eQTL, by = "chr_pos_hg38", all = TRUE)
 merged_hg19_GTEx_eQTL <- unique(merged_hg19_GTEx_eQTL)
@@ -168,7 +167,7 @@ merged_hg19_GTEx_eQTL$V5 <-  NULL
 # Add the column chr:position for hg19
 merged_hg19_GTEx_eQTL$chr_bp_position_hg19 <- paste(merged_hg19_GTEx_eQTL$chr_hg19, merged_hg19_GTEx_eQTL$position_hg19, sep = ":")
 
-write.csv(merged_hg19_GTEx_eQTL, 'results/gene_eQTL_GWAS_Joint_GeneBase/hg19_hg38_All_eQTL_GTEx_Genes_JointGenes_SNEEP_GATESGeneBodies.csv')
+write.csv(merged_hg19_GTEx_eQTL, 'results/gene_eQTL_GWAS_Joint_GeneBase/hg19_hg38_All_eQTL_GTEx_Genes_JointGenes_SNEEP_GATESGeneBodies.csv', row.names = FALSE)
 
 # 2.2. Get rsIDs
 
@@ -199,48 +198,30 @@ write.table(snps_pars_prep, file = "results/gene_eQTL_GWAS_Joint_GeneBase/snps_p
 # bedmap --echo --echo-map-id-uniq snps_pars_genes_natur_sort.bed sorted_common_all_20180418.starch > parsed_430k_snps_with_rsID_natur_sort.bed
 
 # Process the file
-# Provide the correct path to your file
 file_path <- "results/gene_eQTL_GWAS_Joint_GeneBase/parsed_430k_snps_with_rsID_natur_sort.bed"
 
 # Read the file line by line
 lines <- readLines(file_path)
 
-# Initialize empty vectors to store the data
-chromosome <- numeric()
-start <- numeric()
-end <- numeric()
-rsID <- character()
+# Split each line by tabs
+data_elements <- strsplit(lines, "\t")
 
-# Initialize a variable to store the previous rsID
-prev_rsID <- NA
+# Extract chromosome, start, and combined end|rsID columns
+chromosome <- as.numeric(sapply(data_elements, `[[`, 1))
+start <- as.numeric(sapply(data_elements, `[[`, 2))
 
-# Iterate over each line
-for (line in lines) {
-  # Check if the line starts with "|", indicating an rsID
-  if (startsWith(line, "|")) {
-    # Append the rsID to the previous entry
-    rsID[length(rsID)] <- gsub("\\|", "", line)
-  } else {
-    # Split the line by tab character
-    elements <- unlist(strsplit(line, "\t"))
-    
-    # Extract chromosome, start, and end positions
-    chromosome <- c(chromosome, as.numeric(elements[1]))
-    start <- c(start, as.numeric(elements[2]))
-    end <- c(end, as.numeric(elements[3]))
-    
-    # Store the rsID for the current entry
-    rsID <- c(rsID, prev_rsID)
-    
-    # Update the previous rsID
-    prev_rsID <- gsub("\\|", "", elements[4])
-  }
-}
+# Split the third element (end|rsID) by "|"
+end_rsID <- sapply(data_elements, `[[`, 3)
+end_rsID_split <- strsplit(end_rsID, "\\|")
 
-# Combine the data into a data frame
+# Extract the end position and rsID from each split
+end <- as.numeric(sapply(end_rsID_split, `[[`, 1))
+rsID <- sapply(end_rsID_split, function(x) if(length(x) > 1) x[2] else NA)
+
+# Combine the extracted columns into a data frame
 all_parsed_snps_rsIDs <- data.frame(chromosome, start, end, rsID)
 
-# Print the first few rows to check if it was read correctly
+# Print the first few rows to check if it was parsed correctly
 head(all_parsed_snps_rsIDs)
 
 # Split rows with multiple rsIDs into separate rows
@@ -257,12 +238,12 @@ df_filled <- df_split %>%
 all_parsed_snps_rsIDs_final <- df_filled %>%
   distinct()
 
-head(all_parsed_snps_rsIDs_final)
+head(all_parsed_snps_rsIDs_final)  
 
 # Add the column with hg38 position
 all_parsed_snps_rsIDs_final$chr_pos_hg38 <- paste(all_parsed_snps_rsIDs_final$chromosome, all_parsed_snps_rsIDs_final$end, sep = ":")
 
-write.csv(all_parsed_snps_rsIDs_final, 'results/gene_eQTL_GWAS_Joint_GeneBase/all_parsed_430k_snps_rsID_final_processed_hg38.csv')
+write.csv(all_parsed_snps_rsIDs_final, 'results/gene_eQTL_GWAS_Joint_GeneBase/all_parsed_430k_snps_rsID_final_processed_hg38.csv', row.names = FALSE)
 
 # Add rsIDs to the the GTEx eQTL file
 GTEX_hg19_38_rsID <- merge(merged_hg19_GTEx_eQTL, all_parsed_snps_rsIDs_final, by = "chr_pos_hg38", all = TRUE)
