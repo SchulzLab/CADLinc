@@ -14,7 +14,7 @@ import PlottingFunctions
 """Collect the multitude of data to define the gene set we get from SNEEP after setting specific filters, and
 join that with the GATES genes from an external file (see GATES_FDR.py), to produce a variety of plots."""
 
-tag = '2509_JointKnownGenes'
+tag = '0725Revision_'
 plot_out = "Plots/" + tag + '_'
 figure_tables_out = "FigureTables/" + tag + "_"
 godf_out = "GO_DFs/" + tag + "_"
@@ -48,6 +48,11 @@ all_tfsnvs = set([x.strip().split('\t')[0].replace('chr', '') + ':' + x.strip().
 all_rems_file = "AllREMsMerged_200624.bed"
 enhancer_folder = "enhancer_interactions_avghg38_unique/"
 
+# Get the genes that are only found when using SNVs below the conventional genome-wide threshold.
+genomewide_genes_file = "0725RevisionGetGWSigs_SNEEPGenes.txt"
+genomewide_genes = set([x.strip() for x in open(genomewide_genes_file).readlines()])
+
+
 # Files of other gene sets.
 gwas_gene_file = "250924_JointKnownGenes_EnsemblIDs.txt"
 colocstar_gene_file = "starnet.alltss.Coloc_Gene_.abf.res.pp4_0.5.xlsx"
@@ -76,8 +81,9 @@ snp_lds = {}
 snp_hg19_map = {}
 with open(ld_file) as ld_in:
     ld_header = {x: i for i, x in enumerate(ld_in.readline().strip().split('\t'))}
+    chr_tag = 'chr' if 'chr' in ld_header else '#chr'
     for row in ld_in:
-        row = row.strip().split('\t')
+        row = row.strip('\n').split('\t')
         this_snp = row[ld_header['rsId']]
         if this_snp != '-' and this_snp != '.':
             snp_map_id = this_snp
@@ -86,10 +92,10 @@ with open(ld_file) as ld_in:
             else:
                 snp_lds[this_snp] = snp_lds[this_snp].union(set(row[ld_header['ldSNVs']].split(',')))
         else:  # Use the hg38 position as identifier in case of missing rsID or self-made XX ID.
-            snp_map_id = row[ld_header['chr']] + ":" + row[ld_header['start']] + "-" + row[ld_header['end']]
+            snp_map_id = row[ld_header[chr_tag]] + ":" + row[ld_header['start']] + "-" + row[ld_header['end']]
         snp_hg19_map[snp_map_id] = {'chr_hg19': row[ld_header['position_hg19']].split(':')[0].replace('chr', ''), 'POS_hg19': row[ld_header['position_hg19']].split('-')[1],
                                     'Allele1': row[ld_header['allele1']], 'Allele2': row[ld_header['allele2']],
-                                    'chr_hg38': row[ld_header['chr']].replace('chr', ''), 'POS_hg38': row[ld_header['end']]}
+                                    'chr_hg38': row[ld_header[chr_tag]].replace('chr', ''), 'POS_hg38': row[ld_header['end']]}
 
 sneep_df = pd.read_table(sneep_file, header=0, sep="\t")
 
@@ -132,11 +138,13 @@ for entry in sneep_df.to_dict(orient='records'):
                 regrem_collector += gene + '\t' + rem.split(':')[1].split('-')[0] + '\t' + rem.split('-')[1] + '\n'
                 cell_gene_regrems[cell][gene].add(rem)
             gene_regrems[gene]['regSNPs'].add(entry['SNP_position'])
-            snp_pos[entry['rsID']] = entry['SNP_position']
-            gene_regrems[gene]['cell_rsIDs'][cell].add(entry['rsID'])
-            gene_regrems[gene]['rsIDs'].add(entry['rsID'])
-            snp_rem_map[cell][entry['rsID']] = rem
-            snp_tf_map[entry['rsID']][entry['TF']] = str(entry['log_pvalueBindAffVar1_pvalueBindAffVar2'])
+            # Take the position as rsId if not present.
+            entry_rsid = entry['rsID'] if entry['rsID'] != '-' else entry['SNP_position']
+            snp_pos[entry_rsid] = entry['SNP_position']
+            gene_regrems[gene]['cell_rsIDs'][cell].add(entry_rsid)
+            gene_regrems[gene]['rsIDs'].add(entry_rsid)
+            snp_rem_map[cell][entry_rsid] = rem
+            snp_tf_map[entry_rsid][entry['TF']] = str(entry['log_pvalueBindAffVar1_pvalueBindAffVar2'])
 regrem_counts = {c: {g: len(val) for g, val in c_vals.items()} for c, c_vals in cell_gene_regrems.items()}
 # Now merge the regREMs across cell types.
 merged_regrems = BedTool(regrem_collector, from_string=True).sort().merge()
@@ -178,15 +186,42 @@ expression_df = expression_df.groupby(by=expression_df.columns, axis=1).mean()
 ubi_expression = {k.split('.')[0]: val/expression_df.shape[1] for k, val in (expression_df >= 0.5).sum(axis=1).items()}
 
 # ----------------------------------------------------------------------------------------------------------------
+# Expression data from STARNET and MVB
+# ----------------------------------------------------------------------------------------------------------------
+deg_file = "DEGs_Human_plaque_STARNET_CAD_candidates.csv"
+deg_df = pd.read_table(deg_file, sep=',', header=0)
+deg_df = deg_df[(deg_df['FDR'] <= 0.05) & (deg_df['log2FC'].abs() >= 0.3)]
+deg_df = deg_df.drop_duplicates(subset=['Gene_name', 'tissue'], keep='first')
+deg_df['General biotype'] = ['protein-coding' if 'protein' in x else 'non-coding RNA' for x in deg_df['Biotype'].values]
+print(len(set(deg_df['Ensembl_ID'])), 'total DEGs')
+print(len(set(deg_df[deg_df['General biotype'] == 'non-coding RNA']['Ensembl_ID'])), 'NC DEGs')
+deg_counts = pd.DataFrame({bio: Counter(deg_df[deg_df['General biotype'] == bio]['tissue']) for bio in ['protein-coding', 'non-coding RNA']})
+tissue_labeller = {"VAF": 'visceral fat', 'LIV': 'liver', 'AOR': 'atherosclerotic\naortic root', 'SF': 'subcutaneous\nfat', 'SKLM': 'skeletal\nmuscle', 'Human_plaque': 'plaque'}
+deg_counts.index = [tissue_labeller[i] for i in deg_counts.index]
+deg_counts = deg_counts.loc[tissue_labeller.values()]
+PlottingFunctions.stacked_bars(plot_df=deg_counts, x_col='Gene set', y_cols=['protein-coding', 'non-coding RNA'], y_label='Candidate genes that are DEGs', palette=['#FFC20A', '#0C7BDC'],
+                          title="", output_path=plot_out+"DEGs", x_size=5, y_size=4, legend_out=1.9,
+                          rotation=0, legend=True, vertical=True)
+
+deg_sets = {val: set(deg_df[deg_df['tissue'] == t]['Ensembl_ID']) for t, val in tissue_labeller.items()}
+PlottingFunctions.upset_plotter(deg_sets, max_groups=10, sort_categories_by='input', y_label='Shared DEGs', element_size=48,
+                           title_tag='Shared genes', show_percent=False, plot_path=plot_out+"DEGSets", intersection_plot_elements=8)
+
+# ----------------------------------------------------------------------------------------------------------------
 # Paper table
 # ----------------------------------------------------------------------------------------------------------------
 gene_table = pd.DataFrame([[g, gene_name_map[g], g in cad_loci_genes, g in coloc_gtex_genes, g in coloc_starnet_genes] for g in final_gene_set],
                                columns=['Ensembl ID', 'Gene name', 'known CAD GWAS gene', 'Coloc GTEx', 'Coloc STARNET'])
 gene_table['found via'] = [', '.join(['epigenome'*(g in genes_passed_filters), 'GATES'*(g in gene_based_genes)]).strip(', ') for g in gene_table['Ensembl ID'].values]
+gene_table['found via epigenome using stringent cutoff for SNVs'] = [g in genomewide_genes and g in genes_passed_filters for g in gene_table['Ensembl ID'].values]
+gene_table['GATES FDR'] = ["" if g not in gene_based_dict else gene_based_dict[g]['FDR'] for g in gene_table['Ensembl ID'].values]
 
-# Add whether a gene was found in one of the Schnitzler studies.
-for schnitz in schnitzler_sets:
-    gene_table['Schnitzler: '+schnitz] = [g in schnitzler_sets[schnitz] for g in gene_table['Ensembl ID'].values]
+gene_table['Cell types with open promoter and ≥2 CREs with non-LD TF-SNVs'] = [','.join([c for c in cell_types if g in filtered_genes_cell[c]]) for g in gene_table['Ensembl ID'].values]
+gene_table['Number ≤1% FDR TF-SNVs'] = ['' if g not in gene_regrems else len(gene_regrems[g]['rsIDs']) for g in gene_table['Ensembl ID'].values]
+gene_table['TF-SNVs rsIDs'] = ['' if g not in gene_regrems else ','.join(gene_regrems[g]['rsIDs']) for g in gene_table['Ensembl ID'].values]
+gene_table['TF-SNVs positions'] = ['' if g not in gene_regrems else ','.join(gene_regrems[g]['regSNPs']) for g in gene_table['Ensembl ID'].values]
+gene_table['Number affected TFs'] = [0 if g not in gene_regrems else len(set().union(*[snp_tf_map[rs] for rs in gene_regrems[g]['rsIDs']])) for g in gene_table['Ensembl ID'].values]
+gene_table['Number merged CREs with ≤1% FDR TF-SNV from cell types with open promoter'] = [0 if g not in gene_regrems else len(gene_regrems[g]['regREMs']) for g in gene_table['Ensembl ID'].values]
 
 # Add whether they are coexpressed with other known CAD loci genes.
 coexpression = pd.read_table(coexpression_file, sep='\t', header=0).set_index("gene").to_dict(orient='index')
@@ -203,6 +238,7 @@ for gene in gene_table['Ensembl ID'].values:
              coexpress_labels.append("False")
 gene_table['Co-expressed with CAD GWAS genes'] = coexpress_labels
 gene_table['Expression breadth'] = [None if g not in ubi_expression else ubi_expression[g] for g in gene_table['Ensembl ID'].values]
+gene_table['DEG in tissues'] = [','.join([t.replace('\n', ' ') for t, t_degs in deg_sets.items() if g in t_degs]) for g in gene_table['Ensembl ID'].values]
 gene_table['Biotype'] = [gene_biotype_map[g]['gtf'] for g in gene_table['Ensembl ID'].values]
 gene_table['General biotype'] = [gene_biotype_map[g]['general'] for g in gene_table['Ensembl ID'].values]
 
@@ -215,17 +251,15 @@ for cell in open_genes:
         genes_open_cells[g].add(cell)
 gene_table['Cell types with open promoter'] = [','.join(genes_open_cells[g]) for g in gene_table['Ensembl ID'].values]
 
+# Add whether a gene was found in one of the Schnitzler studies.
+for schnitz in schnitzler_sets:
+    gene_table['Schnitzler: '+schnitz] = [g in schnitzler_sets[schnitz] for g in gene_table['Ensembl ID'].values]
+
 # Add whether a gene is conserved.
 biomart_orth_df = pd.read_table(biomart_orth_file, sep='\t', header=0)
 biomart_conserved = set(biomart_orth_df[(biomart_orth_df['Mouse orthology confidence [0 low, 1 high]'] > 0)]['Gene stable ID'])
 conserved_biotypes = Counter(['not found' if g not in gene_biotype_map else gene_biotype_map[g]['general'] for g in biomart_conserved])
 gene_table['Conserved in mouse'] = [g in biomart_conserved or g in nc_conserved for g in gene_table['Ensembl ID'].values]
-
-gene_table['Cell types with open promoter and ≥2 CREs with non-LD TF-SNVs'] = [','.join([c for c in cell_types if g in filtered_genes_cell[c]]) for g in gene_table['Ensembl ID'].values]
-gene_table['Number ≤1% FDR TF-SNVs'] = ['' if g not in gene_regrems else len(gene_regrems[g]['rsIDs']) for g in gene_table['Ensembl ID'].values]
-gene_table['Number affected TFs'] = [0 if g not in gene_regrems else len(set().union(*[snp_tf_map[rs] for rs in gene_regrems[g]['rsIDs']])) for g in gene_table['Ensembl ID'].values]
-gene_table['Number merged CREs with ≤1% FDR TF-SNV from cell types with open promoter'] = [0 if g not in gene_regrems else len(gene_regrems[g]['regREMs']) for g in gene_table['Ensembl ID'].values]
-gene_table['GATES FDR'] = ["" if g not in gene_based_dict else gene_based_dict[g]['FDR'] for g in gene_table['Ensembl ID'].values]
 
 gene_table.to_csv(tag+'_GeneTable.txt', sep='\t', header=True, index=False)
 
