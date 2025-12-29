@@ -91,4 +91,25 @@ coloc_output_08$tissue_labels <- revalue(coloc_output_08$tissue_labels,
                                      "Spleen" = "Spleen"
                                      ))
 head(coloc_output_08)
+
+# Add the information regarding CAD known/novel candidate genes
+gene_table <- read.csv('2509_JointKnownGenes_GeneTable.txt', sep = '\t', header = TRUE)
+gene_table$known_CAD_loci_gene_new_list <- ifelse(
+  gene_table$known.CAD.loci.gene == 'True' | 
+  gene_table$Coloc.GTEx == 'True' | 
+  gene_table$Coloc.STARNET == 'True', 
+  "True", 
+  "False"
+)
+
+# Add the columns to the coloc gene table, perform a left join
+# 'Conserved.in.mouse' column
+coloc_output_08 <- coloc_output_08 %>%
+  left_join(gene_table %>% dplyr::select(Gene.name, Conserved.in.mouse), by = "Gene.name")
+
+# 'known.CAD.loci.gene' column
+coloc_output_08 <- coloc_output_08 %>%
+  left_join(gene_table %>% dplyr::select(Gene.name, known_CAD_loci_gene_new_list), by = "Gene.name")
+head(coloc_output_08)
+
 write.csv(coloc_output_08, 'results/gene_eQTL_GWAS_Joint_GeneBase/GWAS_extraction/Coloc/Final_merged_tables_GTEx_STARNET/Coloc_GTEx_STARNET_merged_eQTLs_HPP4_08_P_5e_8_Renamed_pheno_renamed_tissue.csv', row.names = FALSE)
