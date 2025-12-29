@@ -4,68 +4,7 @@ library(ggplot2)
 library(plyr)
 library(Cairo)
 
-coloc_output <- read.csv('results/gene_eQTL_GWAS_Joint_GeneBase/GWAS_extraction/Coloc/Final_merged_tables_GTEx_STARNET/Coloc_GTEx_STARNET_merged_eQTLs_HPP4_06_P_5e_8_with_eQTL_alleles_Renamed_pheno_renamed_tissue.csv')
-
-# Perform grouping by traits
-coloc_output$Trait_merged_groups <- coloc_output$Trait
-
-coloc_output$Trait_merged_groups <- revalue(coloc_output$Trait_merged_groups,
-                                   c("Atrial_fibrillation" = "Atrial fibrillation",
-                                     "Heart_Failure" = "Heart failure",
-                                     'Resting_heart_rate' = 'Resting heart rate',
-                                     "Type_2_diabetes" = "Glycemic traits",
-                                     "NAFLD" = "Nonalcoholic fatty liver disease",
-                                     "HDL_cholesterol" = "Lipids",
-                                     "LDL_cholesterol" = "Lipids",
-                                     "Triglycerides" = "Lipids",
-                                     "Total_cholesterol" = "Lipids",
-                                     "Non-HDL_cholesterol" = "Lipids",
-                                     "Fasting_glucose" = "Glycemic traits",
-                                     "Fasting_insulin" = "Glycemic traits",
-                                     "HbA1c" = "Glycemic traits",
-                                     "Diastolic_blood_pressure" = "Blood pressure",
-                                     "Systolic_blood_pressure" = "Blood pressure",
-                                     "Pulse_pressure" = "Blood pressure",
-                                     "Two_hour_glucose" = "Glycemic traits",
-                                     "Basophil_count" = "Inflammatory biomarkers",
-                                     "Eosinophil_count" = "Inflammatory biomarkers",
-                                     "Lymphocyte_count" = "Inflammatory biomarkers",
-                                     "Monocyte_count" = "Inflammatory biomarkers",
-                                     "Neutrophil_count" = "Inflammatory biomarkers",
-                                     "Red_blood_cell_count" = "Inflammatory biomarkers",
-                                     "Platelet_count" = "Coagulation/Thrombosis",
-                                     "White_blood_cell_count" = "Inflammatory biomarkers",
-                                     "Body_mass_index" = "Adiposity",
-                                     "Waist-hip_ratio" = "Adiposity",
-                                     "Waist-hip_ratio_adj_BMI" = "Adiposity",
-                                     "pad_primary" = "Peripheral arterial disease",
-                                     "pad_diabetes" = "Peripheral arterial disease",
-                                     "pad_nodiabetes" = "Peripheral arterial disease",
-                                     "pad_eversmoker" = "Peripheral arterial disease",
-                                     "pad_neversmoker" = "Peripheral arterial disease"
-                                     ))
-
-# Add the information regarding CAD known/novel candidate genes 
-gene_table <- read.csv('2509_JointKnownGenes_GeneTable.txt', sep = '\t', header = TRUE)
-
-gene_table$known_CAD_loci_gene_new_list <- ifelse(
-  gene_table$known.CAD.loci.gene == 'True' | 
-  gene_table$Coloc.GTEx == 'True' | 
-  gene_table$Coloc.STARNET == 'True', 
-  "True", 
-  "False"
-)
-
-# Add the columns to the coloc gene table, perform a left join
-# 'Conserved.in.mouse' column
-coloc_output <- coloc_output %>%
-  left_join(gene_table %>% select(Gene.name, Conserved.in.mouse), by = "Gene.name")
-
-# 'known.CAD.loci.gene' column
-coloc_output <- coloc_output %>%
-  left_join(gene_table %>% select(Gene.name, known_CAD_loci_gene_new_list), by = "Gene.name")
-
-head(coloc_output)
+coloc_output <- read.csv('results/gene_eQTL_GWAS_Joint_GeneBase/GWAS_extraction/Coloc/Final_merged_tables_GTEx_STARNET/Coloc_GTEx_STARNET_merged_eQTLs_HPP4_08_P_5e_8_Renamed_pheno_renamed_tissue.csv')
 
 # I.
 # Figure 4A
@@ -283,3 +222,4 @@ stacked_bar_plot_tissue <- ggplot(plot_data_tissue, aes(x = tissue_labels, y = u
 stacked_bar_plot_tissue
 
 ggsave(stacked_bar_plot_tissue, filename = "Figure_4/Figure_4B/Fig_4B_Barplot_pheno_associat_Novel_gene_count_by_tissue.pdf", width = 2.85, height = 2.18, device = cairo_pdf, dpi = 800)
+
