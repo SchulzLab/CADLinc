@@ -12,49 +12,27 @@ library(Cairo)
 library(gridExtra)
 library(patchwork)
 
-coloc_output <- read.csv('results/gene_eQTL_GWAS_Joint_GeneBase/GWAS_extraction/Coloc/Final_merged_tables_GTEx_STARNET/Coloc_GTEx_STARNET_merged_eQTLs_HPP4_06_P_5e_8_with_eQTL_alleles_Renamed_pheno_renamed_tissue.csv')
-gene_table <- read.csv('2509_JointKnownGenes_GeneTable.txt', sep = '\t', header = TRUE)
+coloc_output <- read.csv('results/gene_eQTL_GWAS_Joint_GeneBase/GWAS_extraction/Coloc/Final_merged_tables_GTEx_STARNET/Coloc_GTEx_STARNET_merged_eQTLs_HPP4_08_P_5e_8_Renamed_pheno_renamed_tissue.csv')
 
-# Add the new column with CAD gene nowelty to gene_table
-gene_table$known_CAD_loci_gene_new_list <- ifelse(
-  gene_table$known.CAD.loci.gene == 'True' | 
-  gene_table$Coloc.GTEx == 'True' | 
-  gene_table$Coloc.STARNET == 'True', 
-  "True", 
-  "False"
-)
-
-# Add the columns to the coloc gene table, perform a left join
-# 'Conserved.in.mouse'
-coloc_output <- coloc_output %>%
-  left_join(gene_table %>% select(Gene.name, Conserved.in.mouse), by = "Gene.name")
-
-# 'known.CAD.loci.gene'
-coloc_output <- coloc_output %>%
-  left_join(gene_table %>% select(Gene.name, known_CAD_loci_gene_new_list), by = "Gene.name")
-
-head(coloc_output)
-
-# 504 Unique CAD new genes that  have significant colocalization results
-# 715 Unique CAD known genes that have significant colocalization results
-# Count unique Gene.name values with 'False' in the 'known_CAD_loci_gene_new_list' column
+# 481 Unique CAD new genes that  have significant colocalization results
+# 692 Unique CAD known genes that have significant colocalization results
+# Count unique gene_ensembl values with 'False' in the 'known_CAD_loci_gene_new_list' column
 false_count_known <- coloc_output %>%
-  filter(known_CAD_loci_gene_new_list == "False") %>%
-  summarise(unique_false = n_distinct(Gene.name))
+  dplyr::filter(known_CAD_loci_gene_new_list == "False") %>%
+  dplyr::summarise(unique_false = n_distinct(gene_ensembl))
 
-# Count unique Gene.name values with 'True' in the 'known_CAD_loci_gene_new_list' column
+# Count unique gene_ensembl values with 'True' in the 'known_CAD_loci_gene_new_list' column
 true_count_new <- coloc_output %>%
-  filter(known_CAD_loci_gene_new_list == "True") %>%
-  summarise(unique_true = n_distinct(Gene.name))
+  dplyr::filter(known_CAD_loci_gene_new_list == "True") %>%
+  dplyr::summarise(unique_true = n_distinct(gene_ensembl))
 
 # Print the results
 false_count_known
 true_count_new
 
-# 1052 protein-coding and 167 non-coding genes
+# 1010 protein-coding and 163 non-coding genes
 biotype_genes <- coloc_output[, c("Gene.name", "Biotype_binary")]
 biotype_genes <- biotype_genes[!duplicated(biotype_genes), ]
-
 table(biotype_genes$Biotype_binary)
 
 # Select only novel CAD genes
@@ -64,10 +42,13 @@ novel_genes_coloc <- coloc_output[coloc_output$known_CAD_loci_gene_new_list == '
 filtered_df_prot <- novel_genes_coloc[novel_genes_coloc$Biotype_binary == 'protein-coding', ]
 filtered_df_lnc <- novel_genes_coloc[novel_genes_coloc$Biotype_binary == 'non-coding', ]
 
-# 407 prot-coding novel CAD genes, 97 non-coding novel CAD genes
-# 504 novel in total
+# 387 prot-coding novel CAD genes, 94 non-coding novel CAD genes
+# 481 novel in total
 length(unique(filtered_df_prot$Gene.name))
 length(unique(filtered_df_lnc$Gene.name))
+
+
+
 
 # I.
 # Figure 4C
@@ -75,9 +56,8 @@ length(unique(filtered_df_lnc$Gene.name))
 
 # Final selection
 # There are way too many genes with 0 p-value as the lowest p-value
-# So first, select all top genes with 0 p-value. Then count, with how many traits they are associated. 
+# So first, select all top genes with 0 p-value. Then count, how many traits they are associated with. 
 # Step 1: Group by gene and trait, then select the row with the lowest p_value_GWAS in each group
-top_prot_cod_genes <- filtered_df_prot %>%
   group_by(Gene.name, Trait) %>%
   slice_min(order_by = p_value_GWAS, n = 1, with_ties = FALSE) %>%
   ungroup() %>%
@@ -85,12 +65,12 @@ top_prot_cod_genes <- filtered_df_prot %>%
 
 # Step 2: Filter genes that have 0 as the lowest p-value
 genes_with_zero_pvalue <- top_prot_cod_genes %>%
-  filter(p_value_GWAS == 0) %>%
+  dplyr::filter(p_value_GWAS == 0) %>%
   distinct(Gene.name)
 
 # Step 3: Filter the original dataset to include only genes with zero p-value
 filtered_genes_data <- filtered_df_prot %>%
-  filter(Gene.name %in% genes_with_zero_pvalue$Gene.name)
+  dplyr::filter(Gene.name %in% genes_with_zero_pvalue$Gene.name)
 
 # Step 4: Count the number of different traits for each of those selected genes in the original data frame
 trait_counts <- dplyr::filter(filtered_genes_data, Gene.name %in% genes_with_zero_pvalue$Gene.name) %>%
@@ -99,14 +79,13 @@ trait_counts <- dplyr::filter(filtered_genes_data, Gene.name %in% genes_with_zer
   dplyr::arrange(dplyr::desc(distinct_traits_count))
 
 # Step 5: Select the top 10 genes with the highest number of traits
-top_15_genes <- trait_counts %>%
+top_10_genes <- trait_counts %>%
   slice_head(n = 10)
 
 selected_top_prot_coding <- filtered_df_prot %>%
-  filter(Gene.name %in% top_15_genes$Gene.name)
+  dplyr::filter(Gene.name %in% top_10_genes$Gene.name)
 
 unique(selected_top_prot_coding$Gene.name)
-
 write.csv(selected_top_prot_coding, 'Figure_4/Tables/Top_10_prot_coding_genes_with_all_significant_SNPs.csv', row.names = FALSE)
 
 # Select top SNP for each gene in each combination with the lowest p-value in p_value_GWAS
@@ -116,10 +95,9 @@ top_snp_prot_cod <- selected_top_prot_coding %>%
   ungroup()
 
 top_snp_prot_cod$p_value_GWAS_log10 <- -log10(top_snp_prot_cod$p_value_GWAS)
-
 write.csv(top_snp_prot_cod, 'Figure_4/Tables/Top_10_prot_coding_genes_with_TOP_SNPs.csv', row.names = FALSE)
 
-# Chanhge Inf log10 to the max value available in the df
+# Change Inf log10 to the max value available in the df
 top_snp_prot_cod <- top_snp_prot_cod %>%
   mutate(p_value_GWAS_log10 = ifelse(is.infinite(p_value_GWAS_log10), 323, p_value_GWAS_log10))
 
@@ -147,7 +125,6 @@ unique_traits_count <- top_snp_prot_cod %>%
 # Step 4: Join the lowest p-value tissue information with the unique traits count
 combined_df <- lowest_pval_tissue %>%
   dplyr::left_join(unique_traits_count, by = c("Gene.name", "tissue_labels"))
-
 write.csv(combined_df, 'Figure_4/Tables/Top_10_prot_coding_genes_lowest_P_Trait_by_tissue_count.csv')
 
 # Step 5: If there is a tie in p-values, select the tissue with the highest number of unique traits
@@ -193,7 +170,6 @@ gene_colors <- top_snp_prot_cod_top_tissue %>%
 
 # Convert gene_colors to a named vector for easy lookup
 gene_colors_vec <- setNames(gene_colors$gene_color, gene_colors$Gene.name)
-
 gene_colors_vec
 
 # Add the conservation part
@@ -204,7 +180,6 @@ top_snp_prot_cod_top_tissue$Conserved_in_mouse <- factor(top_snp_prot_cod_top_ti
                                                          levels = c("no", "yes"))
 
 top_snp_prot_cod_top_tissue$Supportive_evidence <- 'Conserved in mouse'
-
 head(top_snp_prot_cod_top_tissue)
 
 # Protein-coding
@@ -228,7 +203,7 @@ heatmap_plot_prot_cod <- ggplot(top_snp_prot_cod_top_tissue, aes(x = Gene.name, 
     axis.text.x = element_blank(),
     axis.text.y = element_text(size = 7, color = "black"),
     axis.title.y = element_text(size = 7, face = "bold", color = "black"),
-    axis.line = element_line(size = 0), # was 0.2-0.3
+    axis.line = element_line(size = 0), 
     plot.background = element_rect(fill = "white", color = "white"),  
     panel.background = element_rect(fill = "white", color = "white"),
     panel.grid = element_blank(),  
@@ -306,7 +281,7 @@ combined_legends <- plot_grid(
   legend1, legend2, legend3, 
   ncol = 1, 
   align = 'v',
-  rel_heights = c(1, 1, 1)  # Adjust heights to bring legends closer
+  rel_heights = c(1, 1, 1) 
 )
 
 # Align heatmaps
@@ -317,7 +292,7 @@ combined_plot <- plot_grid(
   aligned_plots[[1]], 
   aligned_plots[[2]], 
   ncol = 1, 
-  rel_heights = c(1, 1),  # Adjust heights as necessary
+  rel_heights = c(1, 1),
   align = 'v'
 )
 
@@ -328,7 +303,7 @@ final_plot <- plot_grid(
   combined_plot, 
   combined_legends, 
   ncol = 2, 
-  rel_widths = c(1, 1)  # Adjust widths as necessary
+  rel_widths = c(1, 1)
 )
 
 final_plot
@@ -339,6 +314,9 @@ CairoPDF(file_path, width = 43, height = 53, dpi = 600)
 print(final_plot)
 dev.off()
 
+
+
+
 # II.
 # Figure 4D
 # Non-coding
@@ -346,8 +324,8 @@ dev.off()
 # Final selection
 # Group by gene and trait, then select the row with the lowest p_value_GWAS in each group
 top_non_cod_genes <- filtered_df_lnc %>%
-  group_by(gene_ensembl, Trait) %>%
-  filter(p_value_GWAS == min(p_value_GWAS)) %>%
+  dplyr::group_by(gene_ensembl, Trait) %>%
+  dplyr::filter(p_value_GWAS == min(p_value_GWAS)) %>%
   ungroup() %>%
   arrange(p_value_GWAS)
 
@@ -356,10 +334,9 @@ top_10_genes <- top_non_cod_genes %>%
   slice_head(n = 10)
 
 selected_top_non_coding <- filtered_df_lnc %>%
-  filter(Gene.name %in% top_10_genes$Gene.name)
+  dplyr::filter(Gene.name %in% top_10_genes$Gene.name)
 
 unique(selected_top_non_coding$Gene.name)
-
 write.csv(selected_top_non_coding, 'Figure_4/Tables/Top_10_non_coding_genes_with_all_significant_SNPs.csv', row.names = FALSE)
 
 # Select top SNP for each gene in each combination with the lowest p-value in p_value_GWAS
@@ -369,7 +346,6 @@ top_snp_non_cod <- selected_top_non_coding %>%
   ungroup()
 
 top_snp_non_cod$p_value_GWAS_log10 <- -log10(top_snp_non_cod$p_value_GWAS)
-
 write.csv(top_snp_non_cod, 'Figure_4/Tables/Top_10_non_coding_genes_with_TOP_SNPs.csv', row.names = FALSE)
 
 top_snp_non_cod <- top_snp_non_cod %>%
@@ -444,19 +420,16 @@ gene_colors_non_cod <- top_snp_non_cod_top_tissue %>%
 
 # Convert gene_colors_non_cod to a named vector for easy lookup
 gene_colors_non_cod_vec <- setNames(gene_colors_non_cod$gene_color, gene_colors_non_cod$Gene.name)
-
-print(gene_colors_non_cod_vec)
+gene_colors_non_cod_vec
 
 # Add the conservation part
-# Convert to 'yes'/'no'
+## Convert to 'yes'/'no'
 top_snp_non_cod_top_tissue$Conserved_in_mouse <- ifelse(top_snp_non_cod_top_tissue$Conserved.in.mouse, "yes", "no")
 top_snp_non_cod_top_tissue$Supportive_evidence <- 'Conserved in mouse'
 
 top_snp_non_cod_top_tissue$Conserved_in_mouse <- factor(top_snp_non_cod_top_tissue$Conserved_in_mouse,
                                                          levels = c("no", "yes"))
-
 top_snp_non_cod_top_tissue$Supportive_evidence <- 'Conserved in mouse'
-
 head(top_snp_non_cod_top_tissue)
 
 # Non-coding
@@ -469,7 +442,7 @@ heatmap_plot_non_cod <- ggplot(top_snp_non_cod_top_tissue, aes(x = Gene.name, y 
                        breaks = c(0, 100, 200, 300), 
                        labels = c("0", "100", '200', '300'),
                        na.value = 'white',
-                       limits = c(0, 316)) + # The last value should be the largest log10(p) value in the data
+                       limits = c(0, 316)) +
   theme_classic() +
   labs(title = "", x = "", y = "Phenotype") +
   theme(
@@ -480,7 +453,7 @@ heatmap_plot_non_cod <- ggplot(top_snp_non_cod_top_tissue, aes(x = Gene.name, y 
     axis.text.x = element_blank(),
     axis.text.y = element_text(size = 7, color = "black"),
     axis.title.y = element_text(size = 7, face = "bold", color = "black"),
-    axis.line = element_line(size = 0), # was 0.2-0.3
+    axis.line = element_line(size = 0), 
     plot.background = element_rect(fill = "white", color = "white"),  
     panel.background = element_rect(fill = "white", color = "white"),
     panel.grid = element_blank(),  
@@ -568,7 +541,7 @@ combined_plot <- plot_grid(
   aligned_plots[[1]], 
   aligned_plots[[2]], 
   ncol = 1, 
-  rel_heights = c(1, 1),  # Adjust heights as necessary
+  rel_heights = c(1, 1),  
   align = 'v'
 )
 
@@ -579,7 +552,7 @@ final_plot <- plot_grid(
   combined_plot, 
   combined_legends, 
   ncol = 2, 
-  rel_widths = c(1, 1)  # Adjust widths as necessary
+  rel_widths = c(1, 1)
 )
 
 final_plot
@@ -590,11 +563,14 @@ CairoPDF(file_path, width = 43, height = 55, dpi = 600)
 print(final_plot)
 dev.off()
 
+
+
+
 # III.
 # Figure 4E
 # Novel non-coding CAD genes, only conserved in mouse 
 
-# Only 8 conserved in mouse lncRNAs have significant results
+# Only 6 conserved in mouse lncRNAs have significant results
 conserved_gene_count <- filtered_df_lnc %>%
   dplyr::filter(Conserved.in.mouse == 'True') %>%
   dplyr::summarize(count = dplyr::n_distinct(Gene.name))
@@ -614,7 +590,6 @@ trait_counts <- conserved_lnc %>%
   dplyr::arrange(dplyr::desc(distinct_traits_count))
 
 write.csv(conserved_lnc, 'Figure_4/Tables/Novel_conserved_non_coding_genes_with_all_significant_SNPs.csv', row.names = FALSE)
-
 conserved_lnc
 
 # Select top SNP for each gene in each combination with the lowest p-value in p_value_GWAS
@@ -624,46 +599,27 @@ top_snp_non_cod_conserved <- conserved_lnc %>%
   ungroup()
 
 top_snp_non_cod_conserved$p_value_GWAS_log10 <- -log10(top_snp_non_cod_conserved$p_value_GWAS)
-
 write.csv(top_snp_non_cod_conserved, 'Figure_4/Tables/Novel_conserved_non_coding_genes_with_TOP_SNPs.csv', row.names = FALSE)
 
 # Top tissue selection
-# Step 1: Calculate the minimum p-values for each gene and tissue
-min_pvals_per_gene_tissue <- top_snp_non_cod_conserved %>%
-  dplyr::group_by(Gene.name, tissue_labels) %>%
-  dplyr::summarise(
-    min_pval = min(c(p_value_eQTL, p_value_GWAS), na.rm = TRUE),
-    .groups = 'drop'
-  )
-
-# Step 2: Identify the tissue with the lowest p-value for each gene
-lowest_pval_tissue <- min_pvals_per_gene_tissue %>%
-  dplyr::group_by(Gene.name) %>%
-  dplyr::filter(min_pval == min(min_pval)) %>%
-  dplyr::ungroup()
-
-# Step 3: Count the number of unique 'Trait' values for each gene and tissue
+# Step 1: Count the number of unique 'Trait' values for each gene and tissue
 unique_traits_count <- top_snp_non_cod_conserved %>%
-  dplyr::group_by(Gene.name, tissue_labels) %>%
-  dplyr::summarise(unique_trait_count = n_distinct(Trait), .groups = 'drop')
+  group_by(Gene.name, tissue_labels) %>%
+  dplyr::summarise(unique_trait_count = n_distinct(Trait), .groups = "drop")
 
-# Step 4: Join the lowest p-value tissue information with the unique traits count
-combined_df <- lowest_pval_tissue %>%
-  dplyr::left_join(unique_traits_count, by = c("Gene.name", "tissue_labels"))
+# Step 2: For each gene, keep the tissue with the highest number of unique traits
+combined_df <- unique_traits_count %>%
+  group_by(Gene.name) %>%
+  dplyr::filter(unique_trait_count == max(unique_trait_count)) %>%
+  slice(1) %>%   
+  ungroup() %>%
+  dplyr::select(Gene.name, tissue_labels, unique_trait_count)
 
 write.csv(combined_df, 'Figure_4/Tables/Novel_conserved_non_coding_genes_lowest_P_Trait_by_tissue_count.csv')
 
-# Step 5: If there is a tie in p-values, select the tissue with the highest number of unique traits
-top_tissue_per_gene <- combined_df %>%
-  dplyr::group_by(Gene.name) %>%
-  dplyr::filter(unique_trait_count == max(unique_trait_count)) %>%
-  dplyr::slice(1) %>%
-  dplyr::ungroup()
-
-# Step 6: Create the final data frame with the results
-top_tissues_conserved <- top_tissue_per_gene %>%
+# Step 3: Create the final data frame with the results
+top_tissues_conserved <- combined_df %>%
   dplyr::select(Gene.name, tissue_labels)
-
 top_tissues_conserved
 
 # Filter the original dataframe to keep only the rows with the top tissues
@@ -711,7 +667,6 @@ top_snp_conserved_non_cod_top_tissue$Conserved_in_mouse <- factor(top_snp_conser
                                                          levels = c("no", "yes"))
 
 top_snp_conserved_non_cod_top_tissue$Supportive_evidence <- 'Conserved in mouse'
-
 head(top_snp_conserved_non_cod_top_tissue)
 
 # Non-coding, novel and conserved
@@ -724,7 +679,7 @@ heatmap_plot_non_cod <- ggplot(top_snp_conserved_non_cod_top_tissue, aes(x = Gen
                        breaks = c(0, 100, 200, 300), 
                        labels = c("0", "100", '200', '300'),
                        na.value = 'white',
-                       limits = c(0, 316)) + # The last value should be the largest log10(p) value in the data
+                       limits = c(0, 316)) +
   theme_classic() +
   labs(title = "", x = "", y = "Phenotype") +
   theme(
@@ -834,13 +789,13 @@ final_plot <- plot_grid(
   combined_plot, 
   combined_legends, 
   ncol = 2, 
-  rel_widths = c(1, 1)  # Adjust widths as necessary
+  rel_widths = c(1, 1) 
 )
 
 final_plot
 
 # Save the final plot
 file_path <- "Figure_4/Figure_4E/Novel_conserved_non_coding_combined_Figure.pdf"
-CairoPDF(file_path, width = 38, height = 47, dpi = 600)
+CairoPDF(file_path, width = 33, height = 47, dpi = 600)
 print(final_plot)
 dev.off()
