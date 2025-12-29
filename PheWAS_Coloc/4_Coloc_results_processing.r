@@ -64,7 +64,43 @@ coloc_output_08$Trait_labels <- revalue(coloc_output_08$Trait_labels,
                                      "pad_eversmoker" = "Peripheral arterial disease",
                                      "pad_neversmoker" = "Peripheral arterial disease"))
 
-head(coloc_output_08)
+# Perform grouping by traits
+coloc_output_08$Trait_merged_groups <- coloc_output_08$Trait
+coloc_output_08$Trait_merged_groups <- revalue(coloc_output_08$Trait_merged_groups,
+                                   c("Atrial_fibrillation" = "Atrial fibrillation",
+                                     "Heart_Failure" = "Heart failure",
+                                     'Resting_heart_rate' = 'Resting heart rate',
+                                     "Type_2_diabetes" = "Glycemic traits",
+                                     "NAFLD" = "Nonalcoholic fatty liver disease",
+                                     "HDL_cholesterol" = "Lipids",
+                                     "LDL_cholesterol" = "Lipids",
+                                     "Triglycerides" = "Lipids",
+                                     "Total_cholesterol" = "Lipids",
+                                     "Non-HDL_cholesterol" = "Lipids",
+                                     "Fasting_glucose" = "Glycemic traits",
+                                     "Fasting_insulin" = "Glycemic traits",
+                                     "HbA1c" = "Glycemic traits",
+                                     "Diastolic_blood_pressure" = "Blood pressure",
+                                     "Systolic_blood_pressure" = "Blood pressure",
+                                     "Pulse_pressure" = "Blood pressure",
+                                     "Two_hour_glucose" = "Glycemic traits",
+                                     "Basophil_count" = "Inflammatory biomarkers",
+                                     "Eosinophil_count" = "Inflammatory biomarkers",
+                                     "Lymphocyte_count" = "Inflammatory biomarkers",
+                                     "Monocyte_count" = "Inflammatory biomarkers",
+                                     "Neutrophil_count" = "Inflammatory biomarkers",
+                                     "Red_blood_cell_count" = "Inflammatory biomarkers",
+                                     "Platelet_count" = "Coagulation/Thrombosis",
+                                     "White_blood_cell_count" = "Inflammatory biomarkers",
+                                     "Body_mass_index" = "Adiposity",
+                                     "Waist-hip_ratio" = "Adiposity",
+                                     "Waist-hip_ratio_adj_BMI" = "Adiposity",
+                                     "pad_primary" = "Peripheral arterial disease",
+                                     "pad_diabetes" = "Peripheral arterial disease",
+                                     "pad_nodiabetes" = "Peripheral arterial disease",
+                                     "pad_eversmoker" = "Peripheral arterial disease",
+                                     "pad_neversmoker" = "Peripheral arterial disease"
+                                     ))
 
 # Rename Tissue for plotting, merge them in groups
 coloc_output_08$tissue_labels <- coloc_output_08$tissue
