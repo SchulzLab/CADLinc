@@ -41,7 +41,7 @@ stacked_bar_plot <- ggplot(plot_data, aes(x = Trait_merged_groups, y = unique_ge
   geom_bar(stat = "identity", position = "stack") +
   scale_fill_manual(values = c("protein-coding" = "#FFC20A", "non-coding" = "#0C7BDC")) +
   labs(title = '', x = "Phenotype", y = "Number of genes", fill = "Gene biotype") +
-  scale_y_continuous(breaks = seq(0, 1000, by = 200), limits = c(0, 1010)) +  # Set y-axis limits and labels
+  scale_y_continuous(breaks = seq(0, 1000, by = 200), limits = c(0, 1030)) +  # Set y-axis limits and labels
   theme_classic() +
     theme(
     axis.text.x = element_text(angle = 90, hjust = 1, size = 8, family = "Calibri", color = "black"),
@@ -94,7 +94,7 @@ stacked_bar_plot_tissue <- ggplot(plot_data_tissue, aes(x = tissue_labels, y = u
   geom_bar(stat = "identity", position = "stack") +
   scale_fill_manual(values = c("protein-coding" = "#FFC20A", "non-coding" = "#0C7BDC")) +
   labs(title = '', x = "Tissue type", y = "Number of genes", fill = "Gene biotype") +
-  scale_y_continuous(breaks = seq(0, 800, by = 200), limits = c(0, 910)) +  # Set y-axis limits and labels
+  scale_y_continuous(breaks = seq(0, 800, by = 200), limits = c(0, 850)) +  # Set y-axis limits and labels
   theme_classic() +
     theme(
     axis.text.x = element_text(angle = 90, hjust = 1, size = 8, family = "Calibri", color = "black"),
@@ -205,7 +205,7 @@ stacked_bar_plot_tissue <- ggplot(plot_data_tissue, aes(x = tissue_labels, y = u
   geom_bar(stat = "identity", position = "stack") +
   scale_fill_manual(values = c("protein-coding" = "#FFC20A", "non-coding" = "#0C7BDC")) +
   labs(title = '', x = "Tissue type", y = "Number of genes", fill = "Gene biotype") +
-  scale_y_continuous(breaks = seq(0, 400, by = 100), limits = c(0, 410)) +  # Set y-axis limits and labels
+  scale_y_continuous(breaks = seq(0, 300, by = 100), limits = c(0, 310)) +  # Set y-axis limits and labels
   theme_classic() +
     theme(
     axis.text.x = element_text(angle = 90, hjust = 1, size = 8, family = "Calibri", color = "black"),
@@ -222,4 +222,5 @@ stacked_bar_plot_tissue <- ggplot(plot_data_tissue, aes(x = tissue_labels, y = u
 stacked_bar_plot_tissue
 
 ggsave(stacked_bar_plot_tissue, filename = "Figure_4/Figure_4B/Fig_4B_Barplot_pheno_associat_Novel_gene_count_by_tissue.pdf", width = 2.85, height = 2.18, device = cairo_pdf, dpi = 800)
+
 
