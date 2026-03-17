@@ -1,7 +1,7 @@
 # CADLinc
 
-Repository to document scripts and software used in the manuscript "Cell type-specific epigenetic regulatory 
-circuitry of coronary artery disease loci". This repository is not meant to be ready-to-use software to be applied to
+Repository to document scripts and software used in the manuscript [Cell type-specific epigenetic regulatory 
+circuitry of coronary artery disease loci](https://doi.org/10.1038/s41467-026-70216-6). This repository is not meant to be ready-to-use software to be applied to
 new data, but as documentation of the manuscript analyses.
 
 
